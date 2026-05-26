@@ -67,6 +67,9 @@ CREATE INDEX IF NOT EXISTS idx_feedback_submissions_visit_id ON feedback_submiss
 CREATE INDEX IF NOT EXISTS idx_feedback_ratings_doctor_id ON feedback_ratings(doctor_id);
 CREATE INDEX IF NOT EXISTS idx_feedback_submissions_question_answers_gin ON feedback_submissions USING GIN (question_answers);
 
+CREATE INDEX IF NOT EXISTS idx_encounters_created_at ON encounters(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_created_at ON activity_logs(created_at DESC);
+
 CREATE TABLE IF NOT EXISTS encounters (
   id TEXT PRIMARY KEY,
   patient_id TEXT NOT NULL REFERENCES patients(id),

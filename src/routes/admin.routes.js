@@ -63,6 +63,13 @@ function register(app) {
       if (is_active !== undefined) {
         updates.push(`is_active = $${idx++}`);
         params.push(Boolean(is_active));
+        if (!Boolean(is_active)) {
+          for (const [token, session] of sessions) {
+            if (session.id === id) {
+              sessions.delete(token);
+            }
+          }
+        }
       }
       if (role_id !== undefined) {
         if (!req.adminUser.permissions.includes('roles')) {

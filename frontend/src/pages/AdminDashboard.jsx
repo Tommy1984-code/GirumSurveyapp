@@ -1010,8 +1010,8 @@ export default function AdminDashboard({ authToken, currentUser, onLogout }) {
   async function loadEncounterFormData() {
     try {
       const [patientsRes, doctorsRes] = await Promise.all([
-        fetch('/api/patients?page=1&limit=1000', { headers: headers() }),
-        fetch('/api/doctors?page=1&limit=1000&active=active', { headers: headers() })
+        fetch('/api/patients?page=1&limit=200', { headers: headers() }),
+        fetch('/api/doctors?page=1&limit=200&active=active', { headers: headers() })
       ]);
       if (patientsRes.ok) {
         const data = await patientsRes.json();
@@ -1157,6 +1157,7 @@ export default function AdminDashboard({ authToken, currentUser, onLogout }) {
       if (pollIntervalRef.current) return;
 
       async function pollForNewResponses() {
+        if (activeTab !== 'responses') return;
         try {
           const res = await fetch('/api/responses?grouped=true&page=1&limit=20', { headers: headers() });
           const data = await res.json();
@@ -1804,7 +1805,8 @@ export default function AdminDashboard({ authToken, currentUser, onLogout }) {
     const csv = [
       headers.join(','),
       ...rows.map((r) => headers.map((h) => {
-        const val = String(r[h] || '').replace(/"/g, '""');
+        let val = String(r[h] || '').replace(/"/g, '""');
+        if (/^[=+\-@]/.test(val)) val = "'" + val;
         return '"' + val + '"';
       }).join(','))
     ].join('\n');
@@ -1823,7 +1825,8 @@ export default function AdminDashboard({ authToken, currentUser, onLogout }) {
     const csv = [
       headers.join(','),
       ...rows.map((r) => headers.map((h) => {
-        const val = String(r[h] || '').replace(/"/g, '""');
+        let val = String(r[h] || '').replace(/"/g, '""');
+        if (/^[=+\-@]/.test(val)) val = "'" + val;
         return '"' + val + '"';
       }).join(','))
     ].join('\n');

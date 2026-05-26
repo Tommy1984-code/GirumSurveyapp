@@ -18,7 +18,7 @@ async function loadSessions() {
     SELECT s.token, s.user_id, s.username, s.email, s.expires_at, u.role_id,
            COALESCE(json_agg(rp.module) FILTER (WHERE rp.module IS NOT NULL), '[]') AS permissions
     FROM admin_sessions s
-    JOIN admin_users u ON u.id = s.user_id
+    JOIN admin_users u ON u.id = s.user_id AND u.is_active = TRUE
     LEFT JOIN role_permissions rp ON rp.role_id = u.role_id
     GROUP BY s.token, s.user_id, s.username, s.email, s.expires_at, u.role_id
   `);

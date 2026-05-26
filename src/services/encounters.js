@@ -90,20 +90,32 @@ async function getEncountersPaginated({ search = '', page = 1, limit = 10, dateF
     [searchPattern, ...dateFilter.params]
   );
 
-  const encounters = [];
-  for (const row of result.rows) {
+  const encounterIds = result.rows.map(r => r.id);
+  const doctorsByEncounter = {};
+  if (encounterIds.length > 0) {
+    const placeholders = encounterIds.map((_, i) => '$' + (i + 1)).join(',');
     const doctorsResult = await db.query(
-      `SELECT d.id, d.name, d.department, d.image_url
+      `SELECT ed.encounter_id, d.id, d.name, d.department, d.image_url
        FROM encounter_doctors ed
        JOIN doctors d ON d.id = ed.doctor_id
-       WHERE ed.encounter_id = $1`,
-      [row.id]
+       WHERE ed.encounter_id IN (` + placeholders + `)`,
+      encounterIds
     );
-    encounters.push({
-      ...row,
-      doctors: doctorsResult.rows
-    });
+    for (const row of doctorsResult.rows) {
+      if (!doctorsByEncounter[row.encounter_id]) doctorsByEncounter[row.encounter_id] = [];
+      doctorsByEncounter[row.encounter_id].push({
+        id: row.id,
+        name: row.name,
+        department: row.department,
+        image_url: row.image_url
+      });
+    }
   }
+
+  const encounters = result.rows.map(row => ({
+    ...row,
+    doctors: doctorsByEncounter[row.id] || []
+  }));
 
   return {
     encounters,
@@ -139,16 +151,34 @@ async function getEncounterById(id) {
   return { ...result.rows[0], doctors: doctorsResult.rows };
 }
 
-async function createEncounter({ patient_id, doctor_ids }) {
+async function createEncounter({ patient_id, doctor_ids, status }) {
   if (!patient_id) throw new Error('patient_required');
   if (!doctor_ids || !doctor_ids.length) throw new Error('at_least_one_doctor_required');
 
   const id = makeId('E');
+  const isFinished = status === 'finished';
+  let token = null;
+  let link = null;
 
-  await db.query(
-    `INSERT INTO encounters (id, patient_id) VALUES ($1, $2)`,
-    [id, patient_id]
-  );
+  if (isFinished) {
+    const tokenData = await surveyService.createToken();
+    token = tokenData.token;
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    link = baseUrl + '/survey?t=' + encodeURIComponent(token);
+  }
+
+  if (isFinished) {
+    await db.query(
+      `INSERT INTO encounters (id, patient_id, status, survey_token, survey_link, finished_at, updated_at)
+       VALUES ($1, $2, 'finished', $3, $4, NOW(), NOW())`,
+      [id, patient_id, token, link]
+    );
+  } else {
+    await db.query(
+      `INSERT INTO encounters (id, patient_id) VALUES ($1, $2)`,
+      [id, patient_id]
+    );
+  }
 
   for (const doctorId of doctor_ids) {
     await db.query(

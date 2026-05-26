@@ -27,7 +27,7 @@ async function getTransporter() {
     secure: secure === 'true',
     auth: { user, pass },
     connectionTimeout: 10000,
-    tls: { rejectUnauthorized: false }
+    tls: { rejectUnauthorized: true }
   });
 }
 

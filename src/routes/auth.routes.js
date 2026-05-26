@@ -37,6 +37,10 @@ function register(app) {
         if (!token || !sessions.has(token)) {
           return res.status(401).json({ error: 'authentication_required' });
         }
+        const session = sessions.get(token);
+        if (!session.permissions.includes('users')) {
+          return res.status(403).json({ error: 'forbidden', message: 'Access denied. Users module permission required.' });
+        }
       }
       
       const { username, email, password } = req.body;

@@ -56,7 +56,7 @@ function register(app) {
     }
   });
 
-  app.post('/api/patients/upsert', requireAuth, async function (req, res) {
+  app.post('/api/patients/upsert', requireAuth, requireModule('patients'), async function (req, res) {
     try {
       const crypto = require('crypto');
       function makeId(prefix) {

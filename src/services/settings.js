@@ -4,8 +4,11 @@ const db = require('../config/database');
 const ENCRYPTED_KEYS = new Set(['smtp_pass']);
 
 function deriveKey() {
-  const secret = process.env.APP_SECRET || 'default-dev-secret-change-in-production';
-  return crypto.createHash('sha256').update(secret).digest();
+  const secret = process.env.APP_SECRET;
+  if (!secret) {
+    console.warn('WARNING: APP_SECRET not set. Using insecure default encryption key. Set APP_SECRET in .env for production.');
+  }
+  return crypto.createHash('sha256').update(secret || 'default-dev-secret-change-in-production').digest();
 }
 
 function encrypt(text) {
